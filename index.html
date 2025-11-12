@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EcoWaste Market — Netlify + Supabase</title>
+  <meta name="description" content="E‑commerce sampah daur ulang dengan data produk dari Supabase. Deploy mudah di Netlify." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0b1116;
+      --panel:#0f1720;
+      --muted:#99a5b1;
+      --text:#e6edf3;
+      --accent:#22c55e;
+      --accent-2:#86efac;
+      --card:#0b1520;
+      --card-2:#0f1b2a;
+      --border:#1f2a37;
+      --danger:#ef4444;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,Segoe UI,Roboto,Arial,Helvetica,sans-serif;
+      background:
+        radial-gradient(1000px 400px at 10% -10%, rgba(34,197,94,.15), transparent 60%),
+        radial-gradient(1000px 400px at 90% -10%, rgba(134,239,172,.12), transparent 60%),
+        var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    a{color:inherit;text-decoration:none}
+    .container{max-width:1200px;margin:0 auto;padding:0 20px}
+    header{
+      position:sticky;top:0;z-index:50;
+      background:linear-gradient(180deg, rgba(11,17,22,.9), rgba(11,17,22,.6));
+      backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    .nav{display:flex;align-items:center;justify-content:space-between;padding:14px 0}
+    .brand{display:flex;gap:10px;align-items:center;font-weight:700;letter-spacing:.2px}
+    .logo{display:inline-flex;width:34px;height:34px;border-radius:10px;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),#16a34a);color:#06220e;font-weight:800}
+    .menu{display:flex;gap:16px}
+    .menu a{color:var(--muted);font-size:14px}
+    .menu a:hover{color:var(--text)}
+    .actions{display:flex;gap:10px}
+    .btn{
+      border:1px solid var(--border);
+      background:linear-gradient(180deg,#0d1823,#0b1520);
+      color:var(--text);
+      padding:9px 14px;border-radius:10px;font-size:14px;cursor:pointer
+    }
+    .btn:hover{border-color:#2b3948}
+    .btn.primary{background:linear-gradient(180deg,#16a34a,#15803d);border-color:#136534}
+    .btn.ghost{background:transparent}
+    .btn.icon{display:inline-flex;align-items:center;gap:8px}
+    .btn.block{display:block;width:100%}
+
+    .hero{border-bottom:1px solid var(--border)}
+    .hero-grid{display:grid;grid-template-columns:1fr;gap:28px;padding:56px 0}
+    @media(min-width:900px){.hero-grid{grid-template-columns:1.15fr .85fr;gap:36px;padding:72px 0}}
+    .t1{font-size:42px;line-height:1.08;margin:0 0 12px;font-weight:800;letter-spacing:-.02em}
+    .lead{color:var(--muted);font-size:16.5px;margin:0 0 18px}
+    .mock{aspect-ratio:16/10;border:1px solid var(--border);background:linear-gradient(180deg,#0f1b2a,#0b1520);border-radius:18px;padding:16px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+    .mock-inner{
+      width:100%;height:100%;border-radius:12px;display:grid;place-content:center;text-align:center;
+      background:
+        radial-gradient(600px 200px at 50% -10%, rgba(34,197,94,.25), transparent 40%),
+        linear-gradient(135deg,#0a1420,#0e2131);
+      border:1px solid #1b2a3a;
+    }
+    .tag{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(34,197,94,.1);color:#86efac;font-weight:600;border:1px solid #1d3a2a;font-size:13px}
+
+    section{padding:46px 0}
+    .section-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;gap:12px}
+    .h2{font-size:22px;margin:0 0 6px;font-weight:700}
+    .muted{color:var(--muted)}
+
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+    .input, .select{
+      background:#0b1520;border:1px solid var(--border);color:var(--text);
+      padding:10px 12px;border-radius:10px;font-size:14px;min-width:200px
+    }
+    .select{min-width:160px}
+
+    .grid{display:grid;gap:16px}
+    @media(min-width:800px){.grid.cols-3{grid-template-columns:repeat(3,1fr)} .grid.cols-4{grid-template-columns:repeat(4,1fr)}}
+    .card{background:linear-gradient(180deg,var(--card-2),var(--card));border:1px solid var(--border);border-radius:14px;padding:14px;transition:transform .15s ease, border-color .15s ease;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .card:hover{transform:translateY(-2px);border-color:#2b3948}
+    .card h3{font-size:16px;margin:6px 0 8px}
+    .small{font-size:12px;color:var(--muted)}
+    .price{font-size:18px;font-weight:800;color:#86efac}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .skeleton{height:110px;border-radius:14px;background:linear-gradient(90deg,#0e1a26,#122232,#0e1a26);background-size:200% 100%;animation:shimmer 1.1s infinite linear;border:1px solid var(--border)}
+    @keyframes shimmer{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+
+    footer{border-top:1px solid var(--border);background:#0a131a}
+    .fgrid{display:grid;gap:16px}
+    @media(min-width:800px){.fgrid{grid-template-columns:2fr 1fr 1fr 1fr}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand">
+        <span class="logo">E</span><span>EcoWaste Market</span>
+      </div>
+      <nav class="menu">
+        <a href="#produk">Produk</a>
+        <a href="#harga">Harga</a>
+        <a href="#edukasi">Edukasi</a>
+      </nav>
+      <div class="actions">
+        <a class="btn ghost" href="https://app.supabase.com" target="_blank" rel="noreferrer">Supabase</a>
+        <a class="btn primary" href="https://app.netlify.com" target="_blank" rel="noreferrer">Netlify</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="tag">Netlify + Supabase</span>
+          <h1 class="t1">Website E‑Commerce Sampah <br/>dengan Data Dinamis</h1>
+          <p class="lead">Produk & harga diambil langsung dari database Supabase. Siap dideploy gratis di Netlify — cepat, aman, dan modern.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a class="btn primary icon" href="#produk">Lihat Produk</a>
+            <a class="btn icon" href="#tutorial">Ikuti Tutorial</a>
+          </div>
+        </div>
+        <div class="mock">
+          <div class="mock-inner">
+            <div>
+              <div style="font-size:26px;font-weight:800;margin-bottom:8px">#RecycleToEarn</div>
+              <div class="small">Circular Economy for Everyone</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRODUK -->
+    <section id="produk">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="h2">Material Siap Olah</div>
+            <div class="muted">Data dari tabel <code>produk</code> (Supabase).</div>
+          </div>
+          <div class="toolbar">
+            <input id="q" class="input" placeholder="Cari nama produk…" />
+            <select id="sort" class="select">
+              <option value="nama.asc">Nama A→Z</option>
+              <option value="nama.desc">Nama Z→A</option>
+              <option value="harga.asc">Harga Termurah</option>
+              <option value="harga.desc">Harga Termahal</option>
+            </select>
+            <button id="refresh" class="btn">Refresh</button>
+          </div>
+        </div>
+
+        <div id="grid" class="grid cols-3">
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+        </div>
+
+        <p id="status" class="small" style="margin-top:10px"></p>
+      </div>
+    </section>
+
+    <!-- HARGA -->
+    <section id="harga">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="h2">Contoh Harga Beli (Estimasi)</div>
+            <div class="muted">Harga real sebaiknya disimpan di Supabase juga (tabel <code>harga</code>).</div>
+          </div>
+        </div>
+        <div class="grid cols-4">
+          <div class="card"><div class="row"><div><div class="small">Plastik PET bening</div><div class="price" data-price="5500"></div></div><div class="small">/kg</div></div></div>
+          <div class="card"><div class="row"><div><div class="small">Kardus (OCC)</div><div class="price" data-price="2500"></div></div><div class="small">/kg</div></div></div>
+          <div class="card"><div class="row"><div><div class="small">Aluminium (kaleng)</div><div class="price" data-price="18000"></div></div><div class="small">/kg</div></div></div>
+          <div class="card"><div class="row"><div><div class="small">Besi campur</div><div class="price" data-price="3500"></div></div><div class="small">/kg</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TUTORIAL -->
+    <section id="tutorial">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="h2">Ringkas: Cara Setup</div>
+            <div class="muted">Supabase (tabel <code>produk</code>) → Netlify (import dari GitHub) → Live.</div>
+          </div>
+        </div>
+        <div class="grid cols-3">
+          <div class="card">
+            <div class="small">Langkah 1</div>
+            <h3>Buat Proyek & Tabel Supabase</h3>
+            <p class="small">Tabel <code>produk</code>: id (int8, PK, auto), nama (text), harga (numeric). Tambahkan beberapa baris data.</p>
+          </div>
+          <div class="card">
+            <div class="small">Langkah 2</div>
+            <h3>Isi Kunci API</h3>
+            <p class="small">Di file ini, ganti <code>SUPABASE_URL</code> & <code>SUPABASE_KEY</code> dengan milikmu. Gunakan anon key (public).</p>
+          </div>
+          <div class="card">
+            <div class="small">Langkah 3</div>
+            <h3>Deploy ke Netlify</h3>
+            <p class="small">Upload ke GitHub → Netlify “Import from Git” → pilih repo → deploy. Untuk file tunggal, juga bisa drag‑and‑drop.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container" style="padding:28px 0">
+      <div class="fgrid">
+        <div>
+          <div class="brand"><span class="logo">E</span> <span>EcoWaste Market</span></div>
+          <p class="small" style="margin-top:8px;color:var(--muted)">Bangun ekonomi sirkular dengan data yang transparan.</p>
+        </div>
+        <div>
+          <div class="small" style="opacity:.7">Navigasi</div>
+          <a class="small" href="#produk">Produk</a><br/>
+          <a class="small" href="#harga">Harga</a><br/>
+          <a class="small" href="#tutorial">Tutorial</a>
+        </div>
+        <div>
+          <div class="small" style="opacity:.7">Sumber Daya</div>
+          <a class="small" href="https://supabase.com" target="_blank" rel="noreferrer">Supabase</a><br/>
+          <a class="small" href="https://app.netlify.com" target="_blank" rel="noreferrer">Netlify</a><br/>
+          <a class="small" href="https://github.com" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
+        <div>
+          <div class="small" style="opacity:.7">© <span id="y"></span> EcoWaste</div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // === Konfigurasi Supabase (GANTI SESUAI PUNYA KAMU) ===
+    const SUPABASE_URL = "https://yypvaywcsdsdynhhujsk.supabase.co"; // <-- ganti
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5cHZheXdjc2RzZHluaGh1anNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MTQxNDQsImV4cCI6MjA3ODQ5MDE0NH0.PmJ2pskgN2Xiw-d5BMH2C05liEjnUbCvUUgmBXdcfNg"; // <-- ganti
+
+    // === Util: format rupiah ===
+    const IDR = new Intl.NumberFormat('id-ID', {style:'currency', currency:'IDR', maximumFractionDigits:0});
+    for (const el of document.querySelectorAll('[data-price]')) {
+      el.textContent = IDR.format(Number(el.getAttribute('data-price')||0));
+    }
+    document.getElementById('y').textContent = new Date().getFullYear();
+
+    const state = {
+      data: [],
+      q: '',
+      sort: 'nama.asc',
+    };
+
+    const grid = document.getElementById('grid');
+    const statusEl = document.getElementById('status');
+    const qEl = document.getElementById('q');
+    const sortEl = document.getElementById('sort');
+    const refreshBtn = document.getElementById('refresh');
+
+    function cardTemplate(p) {
+      return `
+        <div class="card">
+          <div class="small" style="opacity:.7">${p.kategori || 'Material'}</div>
+          <h3>${p.nama}</h3>
+          <div class="row">
+            <div class="price">${IDR.format(p.harga)}</div>
+            <a class="btn" href="#" aria-label="Beli ${p.nama}">Beli</a>
+          </div>
+        </div>
+      `;
+    }
+
+    function emptyTemplate(msg='Tidak ada data.') {
+      return `<div class="card"><div class="small">${msg}</div></div>`;
+    }
+
+    function setLoading(v) {
+      grid.innerHTML = v
+        ? '<div class="skeleton"></div>'.repeat(6)
+        : '';
+      statusEl.textContent = v ? 'Memuat data dari Supabase…' : '';
+    }
+
+    async function fetchProduk() {
+      setLoading(true);
+      try {
+        const url = new URL(SUPABASE_URL + "/rest/v1/produk");
+        url.searchParams.set('select', '*');
+        // sorting
+        const [col, dir] = state.sort.split('.');
+        url.searchParams.set('order', col);
+        url.searchParams.set('ascending', String(dir === 'asc'));
+
+        // filtering (search by nama)
+        if (state.q) {
+          url.searchParams.set('nama', `ilike.*${state.q}*`);
+        }
+
+        const res = await fetch(url.toString(), {
+          headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY }
+        });
+
+        if (!res.ok) throw new Error("Gagal mengambil data. Cek URL/Key/RLS.");
+        const data = await res.json();
+        state.data = data;
+
+        render();
+        statusEl.textContent = `Menampilkan ${data.length} item.`;
+      } catch (e) {
+        grid.innerHTML = emptyTemplate(e.message);
+        statusEl.textContent = 'Terjadi kesalahan.';
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function render() {
+      if (!state.data || state.data.length === 0) {
+        grid.innerHTML = emptyTemplate('Belum ada produk.');
+        return;
+      }
+      grid.innerHTML = state.data.map(cardTemplate).join('');
+    }
+
+    qEl.addEventListener('input', () => {
+      state.q = qEl.value.trim();
+      fetchProduk();
+    });
+    sortEl.addEventListener('change', () => {
+      state.sort = sortEl.value;
+      fetchProduk();
+    });
+    refreshBtn.addEventListener('click', fetchProduk);
+
+    // initial load
+    fetchProduk();
+  </script>
+</body>
+</html>
