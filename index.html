@@ -188,12 +188,15 @@
             <div class="muted">Harga real sebaiknya disimpan di Supabase juga (tabel <code>harga</code>).</div>
           </div>
         </div>
-        <!-- <div class="grid cols-4">
-          <div class="card"><div class="row"><div><div class="small">Plastik PET bening</div><div class="price" data-price="5500"></div></div><div class="small">/kg</div></div></div>
-          <div class="card"><div class="row"><div><div class="small">Kardus (OCC)</div><div class="price" data-price="2500"></div></div><div class="small">/kg</div></div></div>
-          <div class="card"><div class="row"><div><div class="small">Aluminium (kaleng)</div><div class="price" data-price="18000"></div></div><div class="small">/kg</div></div></div>
-          <div class="card"><div class="row"><div><div class="small">Besi campur</div><div class="price" data-price="3500"></div></div><div class="small">/kg</div></div></div>
-        </div> -->
+        <div class="grid cols-4">
+          <div id="harga-grid" class="grid cols-4">
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+          </div>
+          <p id="harga-status" class="small" style="margin-top:10px"></p>
+        </div>
       </div>
     </section>
 
@@ -269,6 +272,7 @@
       data: [],
       q: '',
       sort: 'nama.asc',
+      hargaData: [],
     };
 
     const grid = document.getElementById('grid');
@@ -276,6 +280,8 @@
     const qEl = document.getElementById('q');
     const sortEl = document.getElementById('sort');
     const refreshBtn = document.getElementById('refresh');
+  const hargaGrid = document.getElementById('harga-grid');
+  const hargaStatusEl = document.getElementById('harga-status');
 
     function cardTemplate(p) {
       return `
@@ -334,6 +340,65 @@
       }
     }
 
+    // ====== Harga (dari Supabase: tabel `harga`) ======
+    function cardHargaTemplate(h) {
+      const nama = h.nama || h.material || 'Material';
+      const satuan = h.satuan || '/kg';
+      const harga = Number(h.harga || 0);
+      return `
+        <div class="card">
+          <div class="row">
+            <div>
+              <div class="small">${nama}</div>
+              <div class="price">${IDR.format(harga)}</div>
+            </div>
+            <div class="small">${satuan}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function setHargaLoading(v) {
+      if (!hargaGrid) return;
+      hargaGrid.innerHTML = v
+        ? '<div class="skeleton"></div>'.repeat(4)
+        : '';
+      if (hargaStatusEl) hargaStatusEl.textContent = v ? 'Memuat harga dari Supabase…' : '';
+    }
+
+    function renderHarga() {
+      if (!hargaGrid) return;
+      if (!state.hargaData || state.hargaData.length === 0) {
+        hargaGrid.innerHTML = emptyTemplate('Belum ada data harga.');
+        return;
+      }
+      hargaGrid.innerHTML = state.hargaData.map(cardHargaTemplate).join('');
+    }
+
+    async function fetchHarga() {
+      setHargaLoading(true);
+      try {
+        const url = new URL(SUPABASE_URL + '/rest/v1/harga');
+        url.searchParams.set('select', '*');
+        url.searchParams.set('order', 'nama');
+        url.searchParams.set('ascending', 'true');
+
+        const res = await fetch(url.toString(), {
+          headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY }
+        });
+        if (!res.ok) throw new Error('Gagal mengambil data harga. Cek tabel/kolom/RLS.');
+        const data = await res.json();
+        state.hargaData = data;
+        renderHarga();
+        if (hargaStatusEl) hargaStatusEl.textContent = `Menampilkan ${data.length} harga.`;
+      } catch (e) {
+        if (hargaGrid) hargaGrid.innerHTML = emptyTemplate(e.message);
+        if (hargaStatusEl) hargaStatusEl.textContent = 'Terjadi kesalahan saat memuat harga.';
+      } finally {
+        setHargaLoading(false);
+      }
+    }
+
     function render() {
       if (!state.data || state.data.length === 0) {
         grid.innerHTML = emptyTemplate('Belum ada produk.');
@@ -354,6 +419,7 @@
 
     // initial load
     fetchProduk();
+    fetchHarga();
   </script>
 </body>
 </html>
