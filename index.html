@@ -184,8 +184,8 @@
       <div class="container">
         <div class="section-head">
           <div>
-            <div class="h2">Contoh Harga Beli (Estimasi)</div>
-            <div class="muted">Harga real sebaiknya disimpan di Supabase juga (tabel <code>harga</code>).</div>
+            <div class="h2">Daftar Harga Beli</div>
+            <div class="muted">Data harga dari tabel <code>produk</code> (Supabase).</div>
           </div>
         </div>
         <div id="harga-grid" class="grid cols-4">
@@ -282,13 +282,14 @@
   const hargaStatusEl = document.getElementById('harga-status');
 
     function cardTemplate(p) {
+      const namaProduk = p.produk || p.nama || 'Produk';
       return `
         <div class="card">
           <div class="small" style="opacity:.7">${p.kategori || 'Material'}</div>
-          <h3>${p.nama}</h3>
+          <h3>${namaProduk}</h3>
           <div class="row">
             <div class="price">${IDR.format(p.harga)}</div>
-            <a class="btn" href="#" aria-label="Beli ${p.nama}">Beli</a>
+            <a class="btn" href="#" aria-label="Beli ${namaProduk}">Beli</a>
           </div>
         </div>
       `;
@@ -310,14 +311,16 @@
       try {
         const url = new URL(SUPABASE_URL + "/rest/v1/produk");
         url.searchParams.set('select', '*');
-        // sorting
-        const [col, dir] = state.sort.split('.');
+        // sorting - sesuaikan nama kolom
+        let [col, dir] = state.sort.split('.');
+        // ganti 'nama' jadi 'produk' untuk sorting
+        if (col === 'nama') col = 'produk';
         url.searchParams.set('order', col);
         url.searchParams.set('ascending', String(dir === 'asc'));
 
-        // filtering (search by nama)
+        // filtering (search by produk)
         if (state.q) {
-          url.searchParams.set('nama', `ilike.*${state.q}*`);
+          url.searchParams.set('produk', `ilike.*${state.q}*`);
         }
 
         const res = await fetch(url.toString(), {
@@ -329,19 +332,19 @@
         state.data = data;
 
         render();
-        statusEl.textContent = `Menampilkan ${data.length} item.`;
+        statusEl.textContent = `Menampilkan ${data.length} item dari Supabase.`;
       } catch (e) {
+        console.error('Error fetchProduk:', e);
         grid.innerHTML = emptyTemplate(e.message);
-        statusEl.textContent = 'Terjadi kesalahan.';
+        statusEl.textContent = 'Terjadi kesalahan saat memuat produk.';
       } finally {
         setLoading(false);
       }
     }
 
-    // ====== Harga (dari Supabase: tabel `harga`) ======
+    // ====== Harga (dari Supabase: tabel `produk`) ======
     function cardHargaTemplate(h) {
-      const nama = h.nama || h.material || 'Material';
-      const satuan = h.satuan || '/kg';
+      const nama = h.produk || h.nama || 'Material';
       const harga = Number(h.harga || 0);
       return `
         <div class="card">
@@ -350,7 +353,7 @@
               <div class="small">${nama}</div>
               <div class="price">${IDR.format(harga)}</div>
             </div>
-            <div class="small">${satuan}</div>
+            <div class="small">/kg</div>
           </div>
         </div>
       `;
@@ -376,26 +379,21 @@
     async function fetchHarga() {
       setHargaLoading(true);
       try {
-        const url = new URL(SUPABASE_URL + '/rest/v1/harga');
-        url.searchParams.set('select', '*');
-        url.searchParams.set('order', 'nama');
+        const url = new URL(SUPABASE_URL + '/rest/v1/produk');
+        url.searchParams.set('select', 'id,produk,harga');
+        url.searchParams.set('order', 'produk');
         url.searchParams.set('ascending', 'true');
+        url.searchParams.set('limit', '8');
 
         const res = await fetch(url.toString(), {
           headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY }
         });
         
         if (!res.ok) {
-          // Jika tabel belum ada (error 400/404), gunakan data dummy
-          console.warn('Tabel "harga" belum ada di Supabase. Menggunakan data dummy.');
-          state.hargaData = [
-            { nama: 'Plastik PET bening', harga: 5500, satuan: '/kg' },
-            { nama: 'Kardus (OCC)', harga: 2500, satuan: '/kg' },
-            { nama: 'Aluminium (kaleng)', harga: 18000, satuan: '/kg' },
-            { nama: 'Besi campur', harga: 3500, satuan: '/kg' }
-          ];
+          console.warn('Gagal mengambil data harga dari tabel produk.');
+          state.hargaData = [];
           renderHarga();
-          if (hargaStatusEl) hargaStatusEl.textContent = 'Menampilkan data contoh (tabel "harga" belum dibuat di Supabase).';
+          if (hargaStatusEl) hargaStatusEl.textContent = 'Belum ada data harga. Pastikan tabel produk sudah terisi.';
           return;
         }
         
@@ -405,15 +403,8 @@
         if (hargaStatusEl) hargaStatusEl.textContent = `Menampilkan ${data.length} harga dari Supabase.`;
       } catch (e) {
         console.error('Error fetchHarga:', e);
-        // Fallback ke dummy data
-        state.hargaData = [
-          { nama: 'Plastik PET bening', harga: 5500, satuan: '/kg' },
-          { nama: 'Kardus (OCC)', harga: 2500, satuan: '/kg' },
-          { nama: 'Aluminium (kaleng)', harga: 18000, satuan: '/kg' },
-          { nama: 'Besi campur', harga: 3500, satuan: '/kg' }
-        ];
-        renderHarga();
-        if (hargaStatusEl) hargaStatusEl.textContent = 'Menggunakan data contoh (koneksi Supabase gagal).';
+        if (hargaGrid) hargaGrid.innerHTML = emptyTemplate('Terjadi kesalahan saat memuat harga.');
+        if (hargaStatusEl) hargaStatusEl.textContent = 'Koneksi ke Supabase gagal.';
       } finally {
         setHargaLoading(false);
       }
