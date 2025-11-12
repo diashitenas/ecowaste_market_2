@@ -188,15 +188,13 @@
             <div class="muted">Harga real sebaiknya disimpan di Supabase juga (tabel <code>harga</code>).</div>
           </div>
         </div>
-        <div class="grid cols-4">
-          <div id="harga-grid" class="grid cols-4">
-            <div class="skeleton"></div>
-            <div class="skeleton"></div>
-            <div class="skeleton"></div>
-            <div class="skeleton"></div>
-          </div>
-          <p id="harga-status" class="small" style="margin-top:10px"></p>
+        <div id="harga-grid" class="grid cols-4">
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
+          <div class="skeleton"></div>
         </div>
+        <p id="harga-status" class="small" style="margin-top:10px"></p>
       </div>
     </section>
 
@@ -386,14 +384,36 @@
         const res = await fetch(url.toString(), {
           headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY }
         });
-        if (!res.ok) throw new Error('Gagal mengambil data harga. Cek tabel/kolom/RLS.');
+        
+        if (!res.ok) {
+          // Jika tabel belum ada (error 400/404), gunakan data dummy
+          console.warn('Tabel "harga" belum ada di Supabase. Menggunakan data dummy.');
+          state.hargaData = [
+            { nama: 'Plastik PET bening', harga: 5500, satuan: '/kg' },
+            { nama: 'Kardus (OCC)', harga: 2500, satuan: '/kg' },
+            { nama: 'Aluminium (kaleng)', harga: 18000, satuan: '/kg' },
+            { nama: 'Besi campur', harga: 3500, satuan: '/kg' }
+          ];
+          renderHarga();
+          if (hargaStatusEl) hargaStatusEl.textContent = 'Menampilkan data contoh (tabel "harga" belum dibuat di Supabase).';
+          return;
+        }
+        
         const data = await res.json();
         state.hargaData = data;
         renderHarga();
-        if (hargaStatusEl) hargaStatusEl.textContent = `Menampilkan ${data.length} harga.`;
+        if (hargaStatusEl) hargaStatusEl.textContent = `Menampilkan ${data.length} harga dari Supabase.`;
       } catch (e) {
-        if (hargaGrid) hargaGrid.innerHTML = emptyTemplate(e.message);
-        if (hargaStatusEl) hargaStatusEl.textContent = 'Terjadi kesalahan saat memuat harga.';
+        console.error('Error fetchHarga:', e);
+        // Fallback ke dummy data
+        state.hargaData = [
+          { nama: 'Plastik PET bening', harga: 5500, satuan: '/kg' },
+          { nama: 'Kardus (OCC)', harga: 2500, satuan: '/kg' },
+          { nama: 'Aluminium (kaleng)', harga: 18000, satuan: '/kg' },
+          { nama: 'Besi campur', harga: 3500, satuan: '/kg' }
+        ];
+        renderHarga();
+        if (hargaStatusEl) hargaStatusEl.textContent = 'Menggunakan data contoh (koneksi Supabase gagal).';
       } finally {
         setHargaLoading(false);
       }
